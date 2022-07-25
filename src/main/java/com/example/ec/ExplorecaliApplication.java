@@ -1,14 +1,20 @@
 package com.example.ec;
 
+import com.example.ec.domain.Difficulty;
+import com.example.ec.domain.Region;
 import com.example.ec.service.TourPackageService;
 import com.example.ec.service.TourService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.objectweb.asm.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import javax.imageio.stream.FileImageInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
@@ -16,7 +22,11 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
 import static com.fasterxml.jackson.annotation.PropertyAccessor.FIELD;
 
 @SpringBootApplication
-public class ExplorecaliApplication {
+public class ExplorecaliApplication implements CommandLineRunner {
+
+    @Value("ExploreCalifornia.json")
+    private String importFile;
+    @Autowired
     private TourPackageService tourPackageService;
 
     @Autowired
@@ -27,14 +37,18 @@ public class ExplorecaliApplication {
         SpringApplication.run(ExplorecaliApplication.class, args);
     }
 
-    private void loadToursAtStartup() throws IOException {
+    @Override
+    public void run(String... args) throws Exception {
+
         //Create the tour packages
+
         createTourPackages();
         long numOfPackages = tourPackageService.total();
-
         //Load the tours from an external Json File
-        createTours("ExploreCalifornia.json");
+        createTours(importFile);
         long numOfTours = tourService.total();
+        System.out.println("Number of tours: " + numOfTours);
+        System.out.println("Number of packages: " + numOfPackages);
     }
 
     /**
@@ -43,7 +57,7 @@ public class ExplorecaliApplication {
     private void createTourPackages() {
         tourPackageService.createTourPackage("BC", "Backpack Cal");
         tourPackageService.createTourPackage("CC", "California Calm");
-        tourPackageService.createTourPackage("CH", "California Hot Springs");
+        tourPackageService.createTourPackage("CH", "California Hot springs");
         tourPackageService.createTourPackage("CY", "Cycle California");
         tourPackageService.createTourPackage("DS", "From Desert to Sea");
         tourPackageService.createTourPackage("KC", "Kids California");
@@ -79,7 +93,30 @@ public class ExplorecaliApplication {
                 bullets, keywords, difficulty, region;
         //reader
         static List<TourFromFile> read(String fileToImport) throws IOException {
-            return new ObjectMapper().setVisibility(FIELD, ANY).readValue(new FileImageInputStream(fileToImport), new TypeReference<List<TourFromFile>>() {});
+            return new ObjectMapper().setVisibility(FIELD, ANY).readValue(new FileInputStream(fileToImport), new TypeReference<List<TourFromFile>>() {
+            });
         }
+        protected TourFromFile(){}
+
+        String getPackageType() { return packageType; }
+
+        String getTitle() { return title;}
+
+        String getDescription() { return description; }
+
+        String getBlurb() { return blurb; }
+
+        Integer getPrice() { return Integer.parseInt(price);}
+
+        String getLength() { return length; }
+
+        String getBullets() { return bullets; }
+
+        String getKeywords() { return keywords; }
+
+        Difficulty getDifficulty() { return Difficulty.valueOf(difficulty); }
+
+        Region getRegion() {return Region.findByLabel(region);}
+
     }
 }
